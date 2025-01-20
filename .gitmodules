@@ -1,6 +1,6 @@
 [submodule "submodules/cutlass"]
 	path = submodules/cutlass
-	url = git@github.com:NVIDIA/cutlass.git
+	url = https://github.com/NVIDIA/cutlass.git
 [submodule "submodules/nlohmann_json"]
 	path = submodules/nlohmann_json
-	url = git@github.com:nlohmann/json.git
+	url = https://github.com/nlohmann/json.git

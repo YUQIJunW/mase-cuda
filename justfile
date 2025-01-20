@@ -2,8 +2,8 @@
 export CUDAFLAGS := "-DCUTLASS_ENABLE_TENSOR_CORE_MMA=1 --expt-relaxed-constexpr"
 export CUDA_ARCHITECTURES := "native"
 project_dir := justfile_directory()
-libtorch_url := "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.5.1%2Bcpu.zip"
-TORCH_CUDA_ARCH_LIST := "8.0 8.6"
+libtorch_url := "https://download.pytorch.org/libtorch/cu124/libtorch-cxx11-abi-shared-with-deps-2.5.1%2Bcu124.zip"
+TORCH_CUDA_ARCH_LIST := "7.5 8.0 8.6 9.0"
 NINJA_MAX_JOBS := num_cpus()
 CMAKE_MAX_JOBS := num_cpus()
 CU_BUILD_TARGETS := ""
@@ -58,4 +58,7 @@ tox:
 
 # ==================== Utils ====================
 download-libtorch-if-not-exists:
+    # download libtorch and extract to submodules if not exists
+    # the extracted libtorch can only be used by c++ language server
+    # the cmake system will use the libtorch installed in the python environment
     if [ ! -d {{project_dir}}/submodules/libtorch ]; then curl -L {{libtorch_url}} -o {{project_dir}}/submodules/libtorch.zip; unzip {{project_dir}}/submodules/libtorch.zip -d {{project_dir}}/submodules; else echo "libtorch already exists"; fi
