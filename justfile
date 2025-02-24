@@ -3,7 +3,7 @@ export CUDAFLAGS := "-DCUTLASS_ENABLE_TENSOR_CORE_MMA=1 --expt-relaxed-constexpr
 export CUDA_ARCHITECTURES := "native"
 project_dir := justfile_directory()
 libtorch_url := "https://download.pytorch.org/libtorch/cu124/libtorch-cxx11-abi-shared-with-deps-2.5.1%2Bcu124.zip"
-TORCH_CUDA_ARCH_LIST := "7.5 8.0 8.6 9.0"
+TORCH_CUDA_ARCH_LIST := "8.0"
 NINJA_MAX_JOBS := num_cpus()
 CMAKE_MAX_JOBS := num_cpus()
 CU_BUILD_TARGETS := ""
