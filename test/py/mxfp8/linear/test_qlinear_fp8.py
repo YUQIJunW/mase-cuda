@@ -27,8 +27,7 @@ def test_packed_weight():
             avg_error = 0
             avg_error_sim = 0
             for _ in range(num_random_tests):
-                # w = 100 * torch.rand(shape, device=device)
-                w = 0.001 * torch.rand(shape, device=device)
+                w = torch.rand(shape, device=device)
                 packed_w = PackedWeight.pack_simulated(w, group_size)
 
                 w_unpacked_sim = packed_w.unpack_simulated()
