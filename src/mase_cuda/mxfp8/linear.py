@@ -2,7 +2,7 @@ import math
 import torch
 
 from .quantize import quantize1d_simulated
-from .dequantize import dequantize1d_E4M3_simulated, dequantize1d_E5M2_simulated
+from .dequantize import dequantize1d, dequantize1d_E4M3_simulated, dequantize1d_E5M2_simulated
 
 
 class PackedWeight:
@@ -19,8 +19,8 @@ class PackedWeight:
 
     def unpack(self) -> torch.Tensor:
         try:
-            # return self.unpack_accelerated()
-            return self.unpack_simulated()
+            return self.unpack_accelerated()
+            # return self.unpack_simulated()
         except NotImplementedError:
             return self.unpack_simulated()
 
