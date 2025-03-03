@@ -1,0 +1,1 @@
+add_executable_test(test_mxfp8_dequantize1d SRC "./test_mxfp8_dequantize1d.cu")
