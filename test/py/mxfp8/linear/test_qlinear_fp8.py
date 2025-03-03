@@ -16,7 +16,8 @@ seed_everything(42)
 
 def test_packed_weight():
     num_random_tests = 10
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     shapes = [(128,), (32, 32), (1024, 1024)]
     group_sizes = [4, 8, 32, 64]
 

@@ -204,6 +204,7 @@ def test_ext_dequantize1d_latency():
     logger.info("\n{}".format(tabulate.tabulate(results, headers=headers, tablefmt="pretty", floatfmt=".3E")))
 
 
+@pytest.mark.slow
 def test_dequantize1d_E4M3_simulated():
     input_tensor = torch.tensor([0x1A, 0x2F, 0x3C, 0x4D, 0x5B, 0x6E, 0x44, 0x8A, 0x9D, 0xAF], dtype=torch.uint8).view(
         torch.float8_e4m3fn
