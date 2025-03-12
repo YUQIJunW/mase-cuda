@@ -4,7 +4,7 @@ import torch
 def quantize1d_simulated(weights: torch.Tensor, group_size: int) -> tuple[torch.Tensor, torch.Tensor]:
     assert weights.ndim == 1, "Weights tensor must be 1D"
     bias = 0x7
-    final_bias = 0x7F - bias
+    final_bias = -bias
     assert group_size > 0, "Group size must be positive"
     numel = weights.numel()
     assert numel % group_size == 0, "Number of elements in the weights tensor must be divisible by the group size"
@@ -20,7 +20,7 @@ def quantize1d_simulated(weights: torch.Tensor, group_size: int) -> tuple[torch.
     # is_zeros = torch.all(w_g == 0.0, dim=1, keepdim=True)
 
     exponent = ((w_g.view(torch.int32) >> 23) & 0xFF)
-    group_exp = exponent.max(dim=1, keepdim=True).values - 0x7F
+    group_exp = exponent.max(dim=1, keepdim=True).values
     # group_exp = torch.where(group_exp < 0, 0, group_exp)  # avoids division by zero
     scales = group_exp.to(torch.int8).flatten()
     

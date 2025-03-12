@@ -6,7 +6,7 @@ def dequantize1d(input: torch.Tensor, scale: torch.Tensor, group_size: int) -> t
 
     :param input: FP8 input mantissa tensor
     :type input: torch.Tensor
-    :param scale: Int8 scale tensor
+    :param scale: uint8 scale tensor
     :type scale: torch.Tensor
     :param group_size: Group size of MXFP8
     :type group_size: int
@@ -47,9 +47,9 @@ def dequantize1d_E4M3_simulated(input: torch.Tensor, scale: torch.Tensor, group_
     assert input.ndim == 1, "Input tensor must be 1D"
     assert scale.ndim == 1, "Scale tensor must be 1D"
     input = input.view(torch.uint8)
-    scale = scale.view(torch.int8)
+    scale = scale.view(torch.uint8)
     bias = 0x7
-    final_bias = 0x7F - bias
+    final_bias = -bias
     numel = input.numel()
     num_groups = numel // group_size
 
@@ -73,9 +73,9 @@ def dequantize1d_E5M2_simulated(input: torch.Tensor, scale: torch.Tensor, group_
     assert input.ndim == 1, "Input tensor must be 1D"
     assert scale.ndim == 1, "Scale tensor must be 1D"
     input = input.view(torch.uint8)
-    scale = scale.view(torch.int8)
+    scale = scale.view(torch.uint8)
     bias = 0xF
-    final_bias = 0x7F - bias
+    final_bias = -bias
 
     numel = input.numel()
     num_groups = numel // group_size
