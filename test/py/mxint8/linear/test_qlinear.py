@@ -93,6 +93,8 @@ def test_qlinear_build():
                 with torch.no_grad():
                     y = qfc(x)
                     y_ref = fc(x)
+                print(y)
+                print(y_ref)
                 error = torch.abs(y - y_ref).mean().item()
                 rows.append([dtype, device, bias, error])
 

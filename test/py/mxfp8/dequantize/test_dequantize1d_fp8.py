@@ -206,10 +206,10 @@ def test_ext_dequantize1d_latency():
 
 @pytest.mark.slow
 def test_dequantize1d_E4M3_simulated():
-    input_tensor = torch.tensor([0x1A, 0x2F, 0x3C, 0x4D, 0x5B, 0x6E, 0x44, 0x8A, 0x9D, 0xAF], dtype=torch.uint8).view(
+    input_tensor = torch.tensor([0xBC, 0x2F, 0x3C, 0x4D, 0x5B, 0x6E, 0x44, 0x8A, 0x9D, 0xAF], dtype=torch.uint8).view(
         torch.float8_e4m3fn
     )
-    scale_tensor = torch.tensor([0x11, 0x12, 0x51, 0x41, 0x33, 0x22, 0x72, 0x48, 0x22, 0x11], dtype=torch.uint8).view(
+    scale_tensor = torch.tensor([0x7D, 0x12, 0x51, 0x41, 0x33, 0x22, 0x72, 0x48, 0x22, 0x11], dtype=torch.uint8).view(
         torch.uint8
     )
     group_size = 1
@@ -218,12 +218,12 @@ def test_dequantize1d_E4M3_simulated():
     assert output.shape == (10, 1)  # Expected reshaped output shape
     assert output.dtype == torch.bfloat16
 
-    expected_output = input_tensor.to(torch.bfloat16) * (2 ** scale_tensor.to(torch.bfloat16))
+    expected_output = input_tensor.to(torch.bfloat16) * (2 ** (scale_tensor.to(torch.bfloat16)-127))
 
-    # print("Example Input Tensor:", input_tensor)
-    # print("Example Scale Tensor:", scale_tensor)
-    # print("Example Output Tensor:", output)
-    # print("Example Expected Output Tensor:", expected_output)
+    print("Example Input Tensor:", input_tensor)
+    print("Example Scale Tensor:", scale_tensor)
+    print("Example Output Tensor:", output)
+    print("Example Expected Output Tensor:", expected_output)
     state = 1
     for i in range(len(input_tensor)):
         if torch.allclose(output[i], expected_output[i], atol=1) == False:
@@ -239,4 +239,4 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     test_ext_dequantize1d()
     test_ext_dequantize1d_latency()
-    test_dequantize1d_E4M3_simulated()
+    # test_dequantize1d_E4M3_simulated()

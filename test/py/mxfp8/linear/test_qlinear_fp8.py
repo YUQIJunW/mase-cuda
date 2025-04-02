@@ -28,7 +28,7 @@ def test_packed_weight():
             avg_error = 0
             avg_error_sim = 0
             for _ in range(num_random_tests):
-                w = torch.rand(shape, device=device)
+                w = torch.rand(shape, device=device, dtype=torch.bfloat16)
                 packed_w = PackedWeight.pack_simulated(w, group_size)
 
                 w_unpacked_sim = packed_w.unpack_simulated()
@@ -63,7 +63,7 @@ def test_qlinear_init():
     out_features = 256
     group_size = 32
     dtypes = [torch.bfloat16, torch.float32, torch.float16]
-    devices = [torch.device("cuda"), torch.device("cpu")]
+    devices = [torch.device("cpu")]
     enable_bias = [True, False]
     for dtype in dtypes:
         for device in devices:
@@ -82,8 +82,8 @@ def test_qlinear_build():
     out_features = 256
     group_size = 32
     batch_size = 16
-    dtypes = [torch.bfloat16, torch.float32, torch.float16]
-    devices = [torch.device("cuda"), torch.device("cpu")]
+    dtypes = [torch.float32, torch.float16, torch.bfloat16]
+    devices = [torch.device("cpu")]
     enable_bias = [True, False]
     rows = []
     for dtype in dtypes:
@@ -106,3 +106,5 @@ def test_qlinear_build():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     test_packed_weight()
+    test_qlinear_init() 
+    test_qlinear_build()

@@ -1,7 +1,7 @@
 import torch
 import mase_cuda_ext
 
-def dequantize1d(input: torch.Tensor, scale: torch.Tensor, group_size: int) -> torch.Tensor:
+def dequantize_E4M3_1d(input: torch.Tensor, scale: torch.Tensor, group_size: int) -> torch.Tensor:
     """Dequantize a 1D input tensor using the given scale tensor and group size.
 
     :param input: FP8 input mantissa tensor
@@ -94,3 +94,30 @@ def dequantize1d_E5M2_simulated(input: torch.Tensor, scale: torch.Tensor, group_
     output = (sign | exp | frac).view(torch.bfloat16)
 
     return output
+
+def test_dequantize1d_E4M3_simulated():
+    input_tensor = torch.tensor([61, 189, 188, 188, 189], dtype=torch.uint8).view(torch.float8_e4m3fn)
+    scale_tensor = torch.tensor([127, 126, 123, 126, 124], dtype=torch.uint8).view(torch.uint8)
+    group_size = 1
+
+    output = dequantize1d_E4M3_simulated(input_tensor, scale_tensor, group_size).to(torch.float32)
+    # assert output.shape == (5, 1)  # Expected reshaped output shape
+    # assert output.dtype == torch.bfloat16
+
+    expected_output = input_tensor.to(torch.bfloat16) * (2 ** (scale_tensor.to(torch.bfloat16)-127))
+
+    # print("Example Input Tensor:", input_tensor)
+    # print("Example Scale Tensor:", scale_tensor)
+    print("Example Output Tensor:", output)
+    print("Example Expected Output Tensor:", expected_output)
+    state = 1
+    for i in range(len(input_tensor)):
+        if torch.allclose(output[i], expected_output[i], atol=1) == False:
+            print("Mismatch at index", i)
+            print("Output:", output[i])
+            print("Expected Output:", expected_output[i])
+            state = 0
+    if state == 1:
+        print("Test Passed")
+
+# test_dequantize1d_E4M3_simulated()

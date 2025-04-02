@@ -1,7 +1,7 @@
 import torch
 
 
-def quantize1d_simulated(weights: torch.Tensor, group_size: int) -> tuple[torch.Tensor, torch.Tensor]:
+def quantize1d_E4M3_simulated(weights: torch.Tensor, group_size: int) -> tuple[torch.Tensor, torch.Tensor]:
     assert weights.ndim == 1, "Weights tensor must be 1D"
     bias = 0x7
     final_bias = -bias
@@ -11,7 +11,7 @@ def quantize1d_simulated(weights: torch.Tensor, group_size: int) -> tuple[torch.
 
     num_groups = numel // group_size
     weights = weights.bfloat16().float()
-    print(weights)
+    # print(weights)
     w_g = weights.flatten().reshape(num_groups, group_size)
 
     sign = torch.where(w_g < 0, torch.tensor(-1, dtype=torch.int8), torch.tensor(1, dtype=torch.int8))
@@ -19,18 +19,36 @@ def quantize1d_simulated(weights: torch.Tensor, group_size: int) -> tuple[torch.
     # w_g = torch.where(w_g < torch.finfo(torch.bfloat16).smallest_normal, 0.0, w_g)
     # is_zeros = torch.all(w_g == 0.0, dim=1, keepdim=True)
 
-    exponent = ((w_g.view(torch.int32) >> 23) & 0xFF)
+    exponent = (w_g.view(torch.int32) >> 23) & 0xFF
     group_exp = exponent.max(dim=1, keepdim=True).values
     # group_exp = torch.where(group_exp < 0, 0, group_exp)  # avoids division by zero
-    scales = group_exp.to(torch.int8).flatten()
+    scales = group_exp.to(torch.uint8).flatten()
     
     w_g = w_g.to(torch.bfloat16).view(torch.int16)
     w_g_exp = (w_g & 0x7F80) >> 7
     w_g_exp = ((w_g_exp - final_bias - group_exp) << 3 ) & 0x78
     w_g_frac = ((w_g & 0x70) >> 4 ) & 0x07
-    w_g = (w_g_exp| w_g_frac).to(torch.int8)
+    sign = sign & 0x80
+    w_g = (sign|w_g_exp| w_g_frac).to(torch.uint8)
 
-    mantissa = (w_g* sign).flatten()
-    print(mantissa.view(torch.float8_e4m3fn))
-    print(scales)
+    mantissa = w_g.flatten()
+    # mantissa = (w_g* sign).flatten()
+    # print(mantissa.view(torch.float8_e4m3fn))
+    # print(scales)
     return mantissa, scales
+
+
+
+def test_quantize1d_E4M3_simulated():
+    tensor = torch.randn(5,dtype=torch.float32)
+    group_size = 1
+
+    mantissa, scale = quantize1d_E4M3_simulated(tensor, group_size)
+
+    print("Example Input Tensor:", tensor)
+
+    print("Example Output Tensor:", mantissa)
+    print("Example Scale Tensor:", scale)
+
+
+# test_quantize1d_E4M3_simulated()

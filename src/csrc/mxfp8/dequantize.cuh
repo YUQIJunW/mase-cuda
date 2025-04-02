@@ -30,15 +30,15 @@ __host__ void dequantize1d_host(TypeX const *x, const int M, TypeScale const *sc
                                 cutlass::bfloat16_t *y) {
     assert(M % group_size == 0);
 
-    uint8_t const *x_raw_uint8 = reinterpret_cast<uint8_t const *>(x);
-    int8_t const *scales_raw_int8 = reinterpret_cast<int8_t const *>(scales);
+    int8_t const *x_raw_int8 = reinterpret_cast<int8_t const *>(x);
+    uint8_t const *scales_raw_uint8 = reinterpret_cast<uint8_t const *>(scales);
     int8_t const bias = 0x7;
     int8_t const final_bias = -bias;
 
     const int num_groups = M / group_size;//get the number of groups
 
-    thrust::host_vector<uint8_t> hX(x_raw_uint8, x_raw_uint8 + M);
-    thrust::host_vector<uint8_t> hScales(scales_raw_int8, scales_raw_int8 + num_groups);
+    thrust::host_vector<int8_t> hX(x_raw_int8, x_raw_int8 + M);
+    thrust::host_vector<uint8_t> hScales(scales_raw_uint8, scales_raw_uint8 + num_groups);
 
     for (int i = 0; i < M; ++i) {
         auto sign = static_cast<uint16_t>(hX[i] & 0x80) << 8;

@@ -1,12 +1,12 @@
 import math
 import torch
 
-from .quantize import quantize1d_simulated
-from .dequantize import dequantize1d, dequantize1d_E4M3_simulated, dequantize1d_E5M2_simulated
+from .quantize import quantize1d_E4M3_simulated
+from .dequantize import dequantize_E4M3_1d, dequantize1d_E4M3_simulated, dequantize1d_E5M2_simulated
 
 
 class PackedWeight:
-    def __init__(self, shape: tuple[int], group_size: int, device=None, dtype=torch.bfloat16):
+    def __init__(self, shape: tuple[int], group_size: int, device=None, dtype=torch.float32):
         numel = math.prod(shape)
         assert numel % group_size == 0, "Number of elements in the weights tensor must be divisible by the group size"
         self.shape = shape
@@ -19,8 +19,8 @@ class PackedWeight:
 
     def unpack(self) -> torch.Tensor:
         try:
-            return self.unpack_accelerated()
-            # return self.unpack_simulated()
+            # return self.unpack_accelerated()
+            return self.unpack_simulated()
         except NotImplementedError:
             return self.unpack_simulated()
 
@@ -28,7 +28,7 @@ class PackedWeight:
         if not self.weight.is_contiguous():
             self.weight = self.weight.contiguous()
 
-        w = dequantize1d(self.weight, self.scales, self.group_size).reshape(self.shape).to(self.dtype)
+        w = dequantize_E4M3_1d(self.weight, self.scales, self.group_size).reshape(self.shape).to(self.dtype)
         return w
 
     def unpack_simulated(self) -> torch.Tensor:
@@ -56,7 +56,7 @@ class PackedWeight:
         ori_shape = weights.size()
         ori_dtype = weights.dtype
         weights = weights.flatten()
-        w, s = quantize1d_simulated(weights, group_size)
+        w, s = quantize1d_E4M3_simulated(weights, group_size)
         packed = cls(ori_shape, group_size, device, ori_dtype)
         packed.weight = w
         packed.scales = s
@@ -79,7 +79,7 @@ class QLinearPacked(torch.nn.Module):
         out_features: int,
         bias: bool = True,
         device=None,
-        dtype=torch.bfloat16,
+        dtype=torch.float32,
         group_size: int = 16,
     ) -> None:
         super().__init__()
