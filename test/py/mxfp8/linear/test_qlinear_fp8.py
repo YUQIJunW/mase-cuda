@@ -16,8 +16,7 @@ seed_everything(42)
 
 def test_packed_weight():
     num_random_tests = 10
-    device = torch.device("cpu")
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     shapes = [(128,), (32, 32), (1024, 1024)]
     group_sizes = [4, 8, 32, 64]
 
@@ -63,7 +62,7 @@ def test_qlinear_init():
     out_features = 256
     group_size = 32
     dtypes = [torch.bfloat16, torch.float32, torch.float16]
-    devices = [torch.device("cpu")]
+    devices = [torch.device("cuda"), torch.device("cpu")]
     enable_bias = [True, False]
     for dtype in dtypes:
         for device in devices:
@@ -78,12 +77,12 @@ def test_qlinear_init():
 
 
 def test_qlinear_build():
-    in_features = 512
-    out_features = 256
-    group_size = 32
-    batch_size = 16
-    dtypes = [torch.float32, torch.float16, torch.bfloat16]
-    devices = [torch.device("cpu")]
+    in_features = 16
+    out_features = 8
+    group_size = 8
+    batch_size = 1
+    dtypes = [torch.bfloat16, torch.float32, torch.float16]
+    devices = [torch.device("cuda"), torch.device("cpu")]
     enable_bias = [True, False]
     rows = []
     for dtype in dtypes:
@@ -91,6 +90,8 @@ def test_qlinear_build():
             for bias in enable_bias:
                 fc = torch.nn.Linear(in_features, out_features, bias=bias, device=device, dtype=dtype)
                 qfc = QLinearPacked.build_from_linear(fc, group_size=group_size)
+                print("FC weight",fc.weight)
+                print("QFC weight",qfc.packed_weight.unpack())
                 x = torch.randn(batch_size, in_features, device=device, dtype=dtype)
                 with torch.no_grad():
                     y = qfc(x)

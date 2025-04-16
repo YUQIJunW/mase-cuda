@@ -19,8 +19,8 @@ class PackedWeight:
 
     def unpack(self) -> torch.Tensor:
         try:
-            # return self.unpack_accelerated()
-            return self.unpack_simulated()
+            return self.unpack_accelerated()
+            # return self.unpack_simulated()
         except NotImplementedError:
             return self.unpack_simulated()
 
