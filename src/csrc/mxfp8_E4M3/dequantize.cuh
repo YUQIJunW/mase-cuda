@@ -23,7 +23,7 @@
 
 
 namespace mase_cuda {
-namespace mxfp8 {
+namespace mxfp8_E4M3 {
 namespace dequantize {
 template <class TypeX, class TypeScale>
 __host__ void dequantize1d_host(TypeX const *x, const int M, TypeScale const *scales, const int group_size,
@@ -47,7 +47,9 @@ __host__ void dequantize1d_host(TypeX const *x, const int M, TypeScale const *sc
 
         auto scales = static_cast<uint16_t>(hScales[i / group_size]);
         auto result = exp + scales + final_bias;
-        auto exp_out = ((result & 0xFF) | ((result >> 8) * 0xFF)) << 7;
+        result = (result < 0) ? 0 : result;
+        result = (result > 0xFE) ? 0xFE : result;
+        auto exp_out = result << 7;
 
         auto out = cutlass::bfloat16_t::bitcast(sign | exp_out | frac);
         y[i] = out;
@@ -151,7 +153,9 @@ __global__ static void dequantize1d_device(TypeX const *x, ShapeX shape_x, Strid
 
         auto scales = static_cast<uint16_t>(sScale[scaleIdx]);
         auto result = exp + scales + -0x7;
-        auto exp_out = ((result & 0xFF) | ((result >> 8) * 0xFF)) << 7;
+        result = (result < 0) ? 0 : result;
+        result = (result > 0xFE) ? 0xFE : result;
+        auto exp_out = result << 7;
         auto out = cutlass::bfloat16_t::bitcast(sign | exp_out | frac);
         tXrY[i] = out;
     }
