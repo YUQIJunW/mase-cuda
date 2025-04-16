@@ -1,0 +1,88 @@
+import torch
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+import psutil
+import os
+import tracemalloc
+from mase_cuda.mxfp8.linear import QLinearPacked
+
+# init_memory = torch.cuda.memory_allocated()  # in bytes
+model_name = "AnkitAI/deberta-xlarge-base-emotions-classifier"
+model = AutoModelForSequenceClassification.from_pretrained(model_name, torch_dtype=torch.float32).cpu().eval()
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+label2emotion = {idx: emotion for emotion, idx in model.config.label2id.items()}
+
+mxfp8_group_size = 1
+assert model.config.hidden_size % mxfp8_group_size == 0
+assert model.config.intermediate_size % mxfp8_group_size == 0
+
+text = "I'm so happy with the results!"
+
+
+# Example usage
+@torch.no_grad()
+def predict_emotion(model, tokenizer, text):
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=128)
+    inputs = {k: v.cpu() for k, v in inputs.items()}
+    outputs = model(**inputs)
+    logits = outputs.logits
+    predictions = logits.argmax(dim=1)
+    predictions = label2emotion[predictions.item()]
+    top3_values, top3_indices = torch.topk(logits, 3)
+    top3_values = top3_values.cpu().tolist()
+    top3_indices = top3_indices.cpu().tolist()
+    return predictions, (top3_values, top3_indices)
+
+
+# check the GPU memory usage of FP32 model
+process = psutil.Process(os.getpid())
+init_memory = process.memory_info().rss
+emotion_fp32, top3_fp32 = predict_emotion(model, tokenizer, text)
+final_memory = process.memory_info().rss
+peak_memory_fp32 = final_memory - init_memory
+# peak_memory_fp32 = torch.cuda.max_memory_allocated() - init_memory  # in bytes
+
+
+def set_layer_by_name(module: torch.nn.Module, name: str, new_layer: torch.nn.Module):
+    """
+    Replace a layer (`new_layer`) in a model (`module`) by its `name`.
+    """
+    levels = name.split(".")
+    if len(levels) > 1:
+        mod_ = module
+        for l_idx in range(len(levels) - 1):
+            if levels[l_idx].isdigit():
+                mod_ = mod_[int(levels[l_idx])]
+            else:
+                mod_ = getattr(mod_, levels[l_idx])
+        setattr(mod_, levels[-1], new_layer)
+    else:
+        setattr(module, name, new_layer)
+
+
+for layer_name, layer in model.named_modules():
+    if not isinstance(layer, torch.nn.Linear):
+        continue
+    if "classifier" in layer_name:
+        continue
+    layer.cpu()
+    layer_q = QLinearPacked.build_from_linear(layer, group_size=mxfp8_group_size)
+    set_layer_by_name(model, layer_name, layer_q)
+    del layer
+    # torch.cuda.empty_cache()
+
+# torch.cuda.empty_cache()
+# torch.cuda.reset_peak_memory_stats()
+# process = psutil.Process(os.getpid())
+# init_memory = process.memory_info().rss
+# emotion_mxfp8, top3_mxfp8 = predict_emotion(model, tokenizer, text)
+# final_memory = process.memory_info().rss
+# peak_memory_mxfp8 = final_memory - init_memory
+# peak_memory_mxfp8 = torch.cuda.max_memory_allocated() - init_memory  # in bytes
+
+print(f"FP32 model peak memory: {peak_memory_fp32/1024**2:.4f} MB")
+print(f"PF32 prediction: {emotion_fp32}")
+print(f"FP32 top3 logits: {top3_fp32[0]}, indices: {top3_fp32[1]}")
+
+# print(f"MXFP8 model peak memory: {peak_memory_mxfp8/1024**2:.4f} MB")
+# print(f"MXFP8 prediction: {emotion_mxfp8}")
+# print(f"MXFP8 top3 logits: {top3_mxfp8[0]}, indices: {top3_mxfp8[1]}")

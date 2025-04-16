@@ -1,0 +1,6 @@
+just build-py
+python -I -m pip install --force-reinstall --no-deps /root/mase-cuda/dist/mase_cuda-0.0.1-cp311-cp311-linux_x86_64.whl
+pip install --force-reinstall dist/mase_cuda-0.0.1-cp311-cp311-linux_x86_64.whl
+
+pip install dist/mase_cuda-0.0.1-cp311-cp311-linux_x86_64.whl
+pip uninstall mase_cuda
