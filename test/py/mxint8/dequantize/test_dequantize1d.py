@@ -10,7 +10,6 @@ from mase_cuda.constants import MASE_CUDA_ROOT_PATH
 
 from mase_cuda.mxint8.dequantize import dequantize1d, dequantize1d_simulated
 from mase_cuda.mxint8.quantize import quantize1d_simulated
-from mase_cuda.mxfp8.dequantize import dequantize1d_E4M3_simulated
 from mase_cuda.utils import seed_everything
 
 logger = logging.getLogger(__name__)

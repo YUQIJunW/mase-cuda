@@ -8,9 +8,9 @@ import ml_dtypes
 import torch
 from mase_cuda.constants import MASE_CUDA_ROOT_PATH
 
-from mase_cuda.mxint8.dequantize import dequantize1d, dequantize1d_simulated
-from mase_cuda.mxint8.quantize import quantize1d_simulated
-from mase_cuda.mxfp8.dequantize import dequantize1d_E4M3_simulated
+from mase_cuda.mxfp8_E4M3.dequantize import dequantize1d_E4M3, dequantize1d_E4M3_simulated
+from mase_cuda.mxfp8_E4M3.quantize import quantize1d_E4M3_simulated
+
 from mase_cuda.utils import seed_everything
 
 logger = logging.getLogger(__name__)
@@ -34,8 +34,8 @@ def test_ext_dequantize1d():
                 scales_dup = scales.repeat_interleave(group_size)
 
                 # view as uint16 to avoid NaN comparison
-                out_cpu = dequantize1d(x, scales, group_size)
-                out_ref = dequantize1d_simulated(x, scales, group_size)
+                out_cpu = dequantize1d_E4M3(x, scales, group_size)
+                out_ref = dequantize1d_E4M3_simulated(x, scales, group_size)
 
                 # find mismatch idx
                 if not torch.equal(out_cpu, out_ref):
@@ -47,7 +47,7 @@ def test_ext_dequantize1d():
                     logger.error(f"out_cpu[mismatch_idx]: {out_cpu[mismatch_idx]}")
                     logger.error(f"out_ref[mismatch_idx]: {out_ref[mismatch_idx]}")
 
-                out_gpu = dequantize1d(x.cuda(), scales.cuda(), group_size).cpu()
+                out_gpu = dequantize1d_E4M3(x.cuda(), scales.cuda(), group_size).cpu()
 
                 if not torch.equal(out_gpu, out_ref):
                     mismatch_idx = torch.where(torch.logical_not(torch.eq(out_gpu, out_ref)))
@@ -60,7 +60,7 @@ def test_ext_dequantize1d():
 
                 assert torch.equal(out_cpu, out_ref)
                 assert torch.equal(out_gpu, out_ref)
-    logger.info("test_ext_dequantize1d: PASS")
+    logger.info("test_ext_dequantize1d_E4M3: PASS")
 
 
 def test_ext_dequantize1d_predication_fast():
@@ -83,8 +83,8 @@ def test_ext_dequantize1d_predication_fast():
                 scales_dup = scales.repeat_interleave(group_size)
 
                 # view as uint16 to avoid NaN comparison
-                out_cpu = dequantize1d(x, scales, group_size)
-                out_ref = dequantize1d_simulated(x, scales, group_size)
+                out_cpu = dequantize1d_E4M3(x, scales, group_size)
+                out_ref = dequantize1d_E4M3_simulated(x, scales, group_size)
 
                 # find mismatch idx
                 if not torch.equal(out_cpu, out_ref):
@@ -96,7 +96,7 @@ def test_ext_dequantize1d_predication_fast():
                     logger.error(f"out_cpu[mismatch_idx]: {out_cpu[mismatch_idx]}")
                     logger.error(f"out_ref[mismatch_idx]: {out_ref[mismatch_idx]}")
 
-                out_gpu = dequantize1d(x.cuda(), scales.cuda(), group_size).cpu()
+                out_gpu = dequantize1d_E4M3(x.cuda(), scales.cuda(), group_size).cpu()
 
                 if not torch.equal(out_gpu, out_ref):
                     mismatch_idx = torch.where(torch.logical_not(torch.eq(out_gpu, out_ref)))
@@ -109,7 +109,7 @@ def test_ext_dequantize1d_predication_fast():
 
                 assert torch.equal(out_cpu, out_ref)
                 assert torch.equal(out_gpu, out_ref)
-    logger.info("test_ext_dequantize1d: PASS")
+    logger.info("test_ext_dequantize1d_E4M3: PASS")
 
 
 @pytest.mark.slow
@@ -239,4 +239,3 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     test_ext_dequantize1d()
     test_ext_dequantize1d_latency()
-    # test_dequantize1d_E4M3_simulated()
