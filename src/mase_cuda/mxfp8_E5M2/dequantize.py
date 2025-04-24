@@ -1,7 +1,7 @@
 import torch
 import mase_cuda_ext
 
-def dequantize_E4M3_1d(input: torch.Tensor, scale: torch.Tensor, group_size: int) -> torch.Tensor:
+def dequantize1d_E5M2(input: torch.Tensor, scale: torch.Tensor, group_size: int) -> torch.Tensor:
     """Dequantize a 1D input tensor using the given scale tensor and group size.
 
     :param input: FP8 input mantissa tensor
@@ -31,39 +31,13 @@ def dequantize_E4M3_1d(input: torch.Tensor, scale: torch.Tensor, group_size: int
         for i in range(num_chunks):
             x_chunk = input[i * chunk_size : (i + 1) * chunk_size]
             scale_chunk = scale[i * chunk_size // group_size : (i + 1) * chunk_size // group_size]
-            y_chunk = mase_cuda_ext.mxfp8.dequantize1d(x_chunk, scale_chunk, group_size)
+            y_chunk = mase_cuda_ext.mxfp8_E5M2.dequantize1d(x_chunk, scale_chunk, group_size)
             chunks.append(y_chunk)
         output = torch.cat(chunks)
         output = output.reshape(ori_shape)
         input = input.reshape(ori_shape)
     else:
-        output = mase_cuda_ext.mxfp8.dequantize1d(input, scale, group_size)
-
-    return output
-
-
-# mxfp8 E4M3 dequantize1d
-def dequantize1d_E4M3_simulated(input: torch.Tensor, scale: torch.Tensor, group_size: int) -> torch.Tensor:
-    assert input.ndim == 1, "Input tensor must be 1D"
-    assert scale.ndim == 1, "Scale tensor must be 1D"
-    input = input.view(torch.uint8)
-    scale = scale.view(torch.uint8)
-    bias = 0x7
-    final_bias = -bias
-    numel = input.numel()
-    num_groups = numel // group_size
-
-    fp8 = input.reshape(num_groups, group_size)
-    scales = scale.reshape(num_groups, 1)
-    sign = (fp8 & 0x80).to(torch.int16) << 8  # get the sign bit
-    exp = (fp8 & 0x78).to(torch.int16) >> 3  # get the exponent bits
-    frac = (fp8 & 0x07).to(torch.int16) << 4  # get the mantissa bits
-
-    scales = scales.to(torch.int16)  # get the scale bits
-    result = exp + scales + final_bias
-    exp = ((result & 0xFF) | ((result >> 8) * 0xFF)) << 7  # add the scale to the exponent
-
-    output = (sign | exp | frac).view(torch.bfloat16)
+        output = mase_cuda_ext.mxfp8_E5M2.dequantize1d(input, scale, group_size)
 
     return output
 
@@ -76,7 +50,6 @@ def dequantize1d_E5M2_simulated(input: torch.Tensor, scale: torch.Tensor, group_
     scale = scale.view(torch.uint8)
     bias = 0xF
     final_bias = -bias
-
     numel = input.numel()
     num_groups = numel // group_size
 
@@ -88,21 +61,11 @@ def dequantize1d_E5M2_simulated(input: torch.Tensor, scale: torch.Tensor, group_
 
     scales = scales.to(torch.int16)  # get the scale bits
     result = exp + scales + final_bias
-    exp = result & 0xFF  << 7
-    # exp = ((result & 0xFF) | ((result >> 8) * 0xFF)) << 7  # add the scale to the exponent
+    result = torch.where(result < 0, 0, result)  # avoid negative exponent
+    result = torch.where(result > 0xFE, 0xFE, result)  # avoid overflow
+    exp = result << 7  # add the scale to the exponent
 
-    output = (sign | exp | frac).view(torch.bfloat16).flatten()
+    output = (sign | exp | frac).view(torch.bfloat16)
+    output = output.flatten()
 
     return output
-
-def test_dequantize1d_E4M3_simulated():
-    input_tensor = torch.tensor([246, 109, 110, 176, 115, 105, 242, 117, 245,  70,  97,  97, 242, 113,
-        105, 246], dtype=torch.uint8).view(torch.float8_e4m3fn)
-    scale_tensor = torch.tensor([116, 117], dtype=torch.uint8).view(torch.uint8)
-    group_size = 8
-
-    output = dequantize1d_E4M3_simulated(input_tensor, scale_tensor, group_size).to(torch.float32)
-    print("Example Output Tensor:", output)
-
-
-# test_dequantize1d_E4M3_simulated()

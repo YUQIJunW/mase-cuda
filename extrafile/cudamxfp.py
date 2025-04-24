@@ -77,3 +77,5 @@ print(f"FP32 top3 logits: {top3_fp32[0]}, indices: {top3_fp32[1]}")
 print(f"MXfp8 model peak memory: {peak_memory_mxfp8/1024**2:.4f} MB")
 print(f"MXfp8 prediction: {emotion_mxfp8}")
 print(f"MXfp8 top3 logits: {top3_mxfp8[0]}, indices: {top3_mxfp8[1]}")
+
+print(f"Compress Rate: {(1-peak_memory_mxfp8/peak_memory_fp32)*100:.2f} %")
