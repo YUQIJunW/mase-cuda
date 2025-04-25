@@ -60,10 +60,10 @@ def dequantize1d_E4M3_simulated(input: torch.Tensor, scale: torch.Tensor, group_
     frac = (fp8 & 0x07).to(torch.int16) << 4  # get the mantissa bits
 
     scales = scales.to(torch.int16)  # get the scale bits
-    result = exp + scales + final_bias
+    result = exp + scales
     result = torch.where(result < 0, 0, result)  # avoid negative exponent
     result = torch.where(result > 0xFE, 0xFE, result)  # avoid overflow
-    exp = result << 7  # add the scale to the exponent
+    exp = result << 7  
 
     output = (sign | exp | frac).view(torch.bfloat16)
     output = output.flatten()

@@ -3,30 +3,27 @@ import torch
 
 def quantize1d_E4M3_simulated(weights: torch.Tensor, group_size: int) -> tuple[torch.Tensor, torch.Tensor]:
     assert weights.ndim == 1, "Weights tensor must be 1D"
-    bias = 0x7
-    final_bias = -bias
+    bias = 0xF
     assert group_size > 0, "Group size must be positive"
     numel = weights.numel()
     assert numel % group_size == 0, "Number of elements in the weights tensor must be divisible by the group size"
 
     num_groups = numel // group_size
     weights = weights.bfloat16().float()
-    # print(weights)
     w_g = weights.flatten().reshape(num_groups, group_size)
 
+    # Get the sign bit
     sign = torch.where(w_g < 0, torch.tensor(-1, dtype=torch.int8), torch.tensor(1, dtype=torch.int8))
     w_g = w_g.abs()
-    # w_g = torch.where(w_g < torch.finfo(torch.bfloat16).smallest_normal, 0.0, w_g)
-    # is_zeros = torch.all(w_g == 0.0, dim=1, keepdim=True)
 
+    # Get the exponent bits
     exponent = (w_g.view(torch.int32) >> 23) & 0xFF
-    group_exp = exponent.max(dim=1, keepdim=True).values + final_bias
-    # group_exp = torch.where(group_exp < 0, 0, group_exp)  # avoids division by zero
+    group_exp = exponent.max(dim=1, keepdim=True).values - bias
     scales = group_exp.to(torch.uint8).flatten()
     
     w_g = w_g.to(torch.bfloat16).view(torch.int16)
     w_g_exp = (w_g & 0x7F80) >> 7
-    w_g_exp = w_g_exp - final_bias - group_exp
+    w_g_exp = w_g_exp - group_exp
     w_g_exp = torch.where(w_g_exp < 0, 0, w_g_exp)
     w_g_exp = (w_g_exp << 3 ) & 0x78
     w_g_flag = (w_g & 0x8) >> 3

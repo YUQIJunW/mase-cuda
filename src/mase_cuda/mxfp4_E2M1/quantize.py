@@ -1,9 +1,9 @@
 import torch
 
 
-def quantize1d_E5M2_simulated(weights: torch.Tensor, group_size: int) -> tuple[torch.Tensor, torch.Tensor]:
+def quantize1d_E2M1_simulated(weights: torch.Tensor, group_size: int) -> tuple[torch.Tensor, torch.Tensor]:
     assert weights.ndim == 1, "Weights tensor must be 1D"
-    bias = 0x1F
+    bias = 0x3
     assert group_size > 0, "Group size must be positive"
     numel = weights.numel()
     assert numel % group_size == 0, "Number of elements in the weights tensor must be divisible by the group size"
@@ -25,11 +25,11 @@ def quantize1d_E5M2_simulated(weights: torch.Tensor, group_size: int) -> tuple[t
     w_g_exp = (w_g & 0x7F80) >> 7
     w_g_exp = w_g_exp - group_exp
     w_g_exp = torch.where(w_g_exp < 0, 0, w_g_exp)
-    w_g_exp = (w_g_exp << 2 ) & 0x7C
-    w_g_flag = (w_g & 0x10) >> 4
-    w_g_frac = (((w_g & 0x60) >> 5 ) + w_g_flag)
-    w_g_frac = torch.where(w_g_frac > 0x3, 0x3, w_g_frac)  # avoid overflow
-    sign = sign & 0x80
+    w_g_exp = (w_g_exp << 1 ) & 0x6
+    w_g_flag = (w_g & 0x20) >> 5
+    w_g_frac = (((w_g & 0x40) >> 6 ) + w_g_flag)
+    w_g_frac = torch.where(w_g_frac > 0x1, 0x1, w_g_frac)  # avoid overflow
+    sign = (sign & 0x80) >> 4
     w_g = (sign|w_g_exp| w_g_frac).to(torch.uint8)
 
     mantissa = w_g.flatten()

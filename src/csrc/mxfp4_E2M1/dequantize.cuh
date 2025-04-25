@@ -23,7 +23,7 @@
 
 
 namespace mase_cuda {
-namespace mxfp8_E5M2 {
+namespace mxfp4_E2M1 {
 namespace dequantize {
 template <class TypeX, class TypeScale>
 __host__ void dequantize1d_host(TypeX const *x, const int M, TypeScale const *scales, const int group_size,
@@ -39,9 +39,9 @@ __host__ void dequantize1d_host(TypeX const *x, const int M, TypeScale const *sc
     thrust::host_vector<uint8_t> hScales(scales_raw_uint8, scales_raw_uint8 + num_groups);
 
     for (int i = 0; i < M; ++i) {
-        auto sign = static_cast<uint16_t>(hX[i] & 0x80) << 8;
-        auto exp = static_cast<uint16_t>(hX[i] & 0x7C) >> 2;
-        auto frac = static_cast<uint16_t>(hX[i] & 0x03) << 5;
+        auto sign = static_cast<uint16_t>(hX[i] & 0x8) << 12;
+        auto exp = static_cast<uint16_t>(hX[i] & 0x6) >> 1;
+        auto frac = static_cast<uint16_t>(hX[i] & 0x1) << 6;
 
         auto scales = static_cast<uint16_t>(hScales[i / group_size]);
         auto result = exp + scales;
@@ -145,9 +145,9 @@ __global__ static void dequantize1d_device(TypeX const *x, ShapeX shape_x, Strid
     CUTE_UNROLL
     for (int i = 0; i < size(tXrY); ++i) {
         auto scaleIdx = threadIdx.x / size<0>(layout_tX);
-        auto sign = static_cast<uint16_t>(tXsX[i] & 0x80) << 8;
-        auto exp = static_cast<uint16_t>(tXsX[i] & 0x7C) >> 2;
-        auto frac = static_cast<uint16_t>(tXsX[i] & 0x03) << 5;
+        auto sign = static_cast<uint16_t>(tXsX[i] & 0x8) << 12;
+        auto exp = static_cast<uint16_t>(tXsX[i] & 0x6) >> 1;
+        auto frac = static_cast<uint16_t>(tXsX[i] & 0x1) << 6;
 
         auto scales = static_cast<uint16_t>(sScale[scaleIdx]);
         auto result = exp + scales;

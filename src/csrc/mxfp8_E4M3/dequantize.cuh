@@ -32,8 +32,6 @@ __host__ void dequantize1d_host(TypeX const *x, const int M, TypeScale const *sc
 
     int8_t const *x_raw_int8 = reinterpret_cast<int8_t const *>(x);
     uint8_t const *scales_raw_uint8 = reinterpret_cast<uint8_t const *>(scales);
-    int8_t const bias = 0x7;
-    int8_t const final_bias = -bias;
 
     const int num_groups = M / group_size;//get the number of groups
 
@@ -46,7 +44,7 @@ __host__ void dequantize1d_host(TypeX const *x, const int M, TypeScale const *sc
         auto frac = static_cast<uint16_t>(hX[i] & 0x07) << 4;
 
         auto scales = static_cast<uint16_t>(hScales[i / group_size]);
-        auto result = exp + scales + final_bias;
+        auto result = exp + scales;
         result = (result < 0) ? 0 : result;
         result = (result > 0xFE) ? 0xFE : result;
         auto exp_out = result << 7;
@@ -152,7 +150,7 @@ __global__ static void dequantize1d_device(TypeX const *x, ShapeX shape_x, Strid
         auto frac = static_cast<uint16_t>(tXsX[i] & 0x07) << 4;
 
         auto scales = static_cast<uint16_t>(sScale[scaleIdx]);
-        auto result = exp + scales + -0x7;
+        auto result = exp + scales;
         result = (result < 0) ? 0 : result;
         result = (result > 0xFE) ? 0xFE : result;
         auto exp_out = result << 7;
