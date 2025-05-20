@@ -33,5 +33,21 @@ def quantize1d_E2M1_simulated(weights: torch.Tensor, group_size: int) -> tuple[t
     w_g = (sign|w_g_exp| w_g_frac).to(torch.uint8)
 
     mantissa = w_g.flatten()
-    return mantissa, scales
+    mantissa = mantissa.view(-1, 2)
+    pack = mantissa[:, 0] << 4 | mantissa[:, 1]
+    pack = pack.flatten()
+    return pack, scales
 
+def test_quantize1d_E2M1_simulated():
+    weights_tensor = torch.tensor([0.0, 1.0, -1.0, 2.0, -2.0, 3.0, -3.0, 4.0], dtype=torch.float32)
+    group_size = 8
+
+    quantized_weights, scales = quantize1d_E2M1_simulated(weights_tensor, group_size)
+
+    print("Example Weights Tensor:", weights_tensor)
+    print("Example Group Size:", group_size)
+    print("Quantized Weights:", quantized_weights)
+    print("Scales:", scales)
+
+if __name__ == "__main__":
+    test_quantize1d_E2M1_simulated()

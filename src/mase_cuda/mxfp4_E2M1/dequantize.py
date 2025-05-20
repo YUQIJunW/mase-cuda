@@ -48,9 +48,12 @@ def dequantize1d_E2M1_simulated(input: torch.Tensor, scale: torch.Tensor, group_
     assert scale.ndim == 1, "Scale tensor must be 1D"
     input = input.view(torch.uint8)
     scale = scale.view(torch.uint8)
-    numel = input.numel()
-    num_groups = numel // group_size
+    numel = input.numel()*2 
+    num_groups = numel// group_size
 
+    high4 = input >> 4
+    low4 = input & 0x0F
+    input = torch.stack((high4, low4), dim=1).flatten()
     fp4 = input.reshape(num_groups, group_size)
     scales = scale.reshape(num_groups, 1)
     sign = (fp4 & 0x8).to(torch.int16) << 12  # get the sign bit
@@ -69,3 +72,17 @@ def dequantize1d_E2M1_simulated(input: torch.Tensor, scale: torch.Tensor, group_
     return output
 
 
+def test_dequantize1d_E2M1_simulated():
+    input_tensor = torch.tensor([2, 164, 197, 214], dtype=torch.uint8)
+    scale_tensor = torch.tensor([126], dtype=torch.uint8)
+    group_size = 8
+
+    output = dequantize1d_E2M1_simulated(input_tensor, scale_tensor, group_size)
+
+
+    print("Example Input Tensor:", input_tensor)
+    print("Example Scale Tensor:", scale_tensor)
+    print("Example Output Tensor:", output)
+
+if __name__ == "__main__":
+    test_dequantize1d_E2M1_simulated()
