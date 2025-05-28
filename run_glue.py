@@ -46,7 +46,6 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version, send_example_telemetry
 from transformers.utils.versions import require_version
-from mase_cuda.mxfp8_E4M3.linear import QLinearPacked
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
@@ -103,6 +102,15 @@ class DataTrainingArguments:
         metadata={
             "help": (
                 "The group size for quantization. The model will be quantized to 8-bit with this group size."
+            )
+        },
+    )
+    data_type: str = field(
+        default="mxfp8_E4M3",
+        metadata={
+            "help": (
+                "The data type for the model. The model will be quantized to this data type. "
+                "Currently supported: mxfp4_E2M1, mxfp8_E4M3, mxfp8_E5M2."
             )
         },
     )
@@ -372,6 +380,19 @@ def main():
             label_list.sort()  # Let's sort it for determinism
             num_labels = len(label_list)
 
+    if data_args.data_type == "mxfp8_E4M3":
+        from mase_cuda.mxfp8_E4M3.linear import QLinearPacked
+    elif data_args.data_type == "mxfp8_E5M2":
+        from mase_cuda.mxfp8_E5M2.linear import QLinearPacked
+    elif data_args.data_type == "mxfp6_E2M3":
+        from mase_cuda.mxfp6_E2M3.linear import QLinearPacked
+    elif data_args.data_type == "mxfp6_E3M2":
+        from mase_cuda.mxfp6_E3M2.linear import QLinearPacked
+    elif data_args.data_type == "mxfp4_E2M1":
+        from mase_cuda.mxfp4_E2M1.linear import QLinearPacked
+    else:
+        data_args.data_type = "mxfp8_E4M3"
+        from mase_cuda.mxfp8_E4M3.linear import QLinearPacked
     # Load pretrained model and tokenizer
     #
     # In distributed training, the .from_pretrained methods guarantee that only one local process can concurrently
@@ -677,11 +698,10 @@ def main():
 
         peak_memory_mxfp8 = torch.cuda.max_memory_allocated()
 
+        print(f"Data type: {data_args.data_type}")
+        print(f"Group size: {data_args.group_size}")
         print(f"Original model peak memory: {peak_memory_fp32/1024**2:.4f} MB")
-
         print(f"MXfp8 model peak memory: {peak_memory_mxfp8/1024**2:.4f} MB")
-
-
         print(f"Compress Rate: {(1-peak_memory_mxfp8/peak_memory_fp32)*100:.2f} %")
     
 

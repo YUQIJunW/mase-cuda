@@ -3,7 +3,9 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 # from mase_cuda.mxfp8_E4M3.linear import QLinearPacked
 # from mase_cuda.mxfp8_E5M2.linear import QLinearPacked
-from mase_cuda.mxfp4_E2M1.linear import QLinearPacked
+# from mase_cuda.mxfp6_E2M3.linear import QLinearPacked
+from mase_cuda.mxfp6_E3M2.linear import QLinearPacked
+# from mase_cuda.mxfp4_E2M1.linear import QLinearPacked
 
 init_memory = torch.cuda.memory_allocated()  # in bytes
 model_name = "AnkitAI/deberta-xlarge-base-emotions-classifier"
@@ -11,7 +13,7 @@ model = AutoModelForSequenceClassification.from_pretrained(model_name, torch_dty
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 label2emotion = {idx: emotion for emotion, idx in model.config.label2id.items()}
 
-mxfp8_group_size = 32
+mxfp8_group_size = 16
 assert model.config.hidden_size % mxfp8_group_size == 0
 assert model.config.intermediate_size % mxfp8_group_size == 0
 

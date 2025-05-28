@@ -4,6 +4,8 @@
 #include "./mxint/dequantize.cuh"
 #include "./mxfp8_E4M3/dequantize.cuh"
 #include "./mxfp8_E5M2/dequantize.cuh"
+#include "./mxfp6_E2M3/dequantize.cuh"
+#include "./mxfp6_E3M2/dequantize.cuh"
 #include "./mxfp4_E2M1/dequantize.cuh"
 
 // refer to https://github.com/pybind/python_example/blob/master/src/main.cpp
@@ -16,12 +18,18 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     auto m_mxint8 = m.def_submodule("mxint8", "OCP-MXINT8 module");
     auto m_mxfp8_E4M3 = m.def_submodule("mxfp8_E4M3", "OCP-MXFP8_E4M3 module");
     auto m_mxfp8_E5M2 = m.def_submodule("mxfp8_E5M2", "OCP-MXFP8_E5M2 module");
+    auto m_mxfp6_E2M3 = m.def_submodule("mxfp6_E2M3", "OCP-MXFP6_E2M3 module");
+    auto m_mxfp6_E3M2 = m.def_submodule("mxfp6_E3M2", "OCP-MXFP6_E3M2 module");
     auto m_mxfp4_E2M1 = m.def_submodule("mxfp4_E2M1", "OCP-MXFP4_E2M1 module");
     m_mxint8.def("dequantize1d", &mase_cuda::mxint8::dequantize::dequantize1d, py::arg("x"), py::arg("scales"),
                  py::arg("group_size"));
     m_mxfp8_E4M3.def("dequantize1d", &mase_cuda::mxfp8_E4M3::dequantize::dequantize1d, py::arg("x"), py::arg("scales"),
                 py::arg("group_size"));
     m_mxfp8_E5M2.def("dequantize1d", &mase_cuda::mxfp8_E5M2::dequantize::dequantize1d, py::arg("x"), py::arg("scales"),
+                py::arg("group_size"));
+    m_mxfp6_E2M3.def("dequantize1d", &mase_cuda::mxfp6_E2M3::dequantize::dequantize1d, py::arg("x"), py::arg("scales"),
+                py::arg("group_size"));
+    m_mxfp6_E3M2.def("dequantize1d", &mase_cuda::mxfp6_E3M2::dequantize::dequantize1d, py::arg("x"), py::arg("scales"),
                 py::arg("group_size"));
     m_mxfp4_E2M1.def("dequantize1d", &mase_cuda::mxfp4_E2M1::dequantize::dequantize1d, py::arg("x"), py::arg("scales"),
                 py::arg("group_size"));

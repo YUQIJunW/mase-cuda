@@ -7,7 +7,7 @@ import torch
 
 from mase_cuda.utils import seed_everything
 
-from mase_cuda.mxfp4_E2M1.linear import PackedWeight, QLinearPacked
+from mase_cuda.mxfp6_E2M3.linear import PackedWeight, QLinearPacked
 
 logger = logging.getLogger(__name__)
 seed_everything(42)

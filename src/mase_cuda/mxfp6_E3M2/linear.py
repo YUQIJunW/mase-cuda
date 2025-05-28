@@ -1,8 +1,8 @@
 import math
 import torch
 
-from .quantize import quantize1d_E2M1_simulated
-from .dequantize import dequantize1d_E2M1, dequantize1d_E2M1_simulated, dequantize1d_E2M1_reshape
+from .quantize import quantize1d_E3M2_simulated
+from .dequantize import dequantize1d_E3M2, dequantize1d_E3M2_simulated, dequantize1d_E3M2_reshape
 
 
 class PackedWeight:
@@ -26,16 +26,16 @@ class PackedWeight:
         if not self.weight.is_contiguous():
             self.weight = self.weight.contiguous()
         
-        w = dequantize1d_E2M1_reshape(self.weight)
-        w = dequantize1d_E2M1(w, self.scales, self.group_size).reshape(self.shape).to(self.dtype)
+        w = dequantize1d_E3M2_reshape(self.weight)
+        w = dequantize1d_E3M2(w, self.scales, self.group_size).reshape(self.shape).to(self.dtype)
         return w
 
     def unpack_simulated(self) -> torch.Tensor:
         if not self.weight.is_contiguous():
             self.weight = self.weight.contiguous()
 
-        w = dequantize1d_E2M1_reshape(self.weight)
-        w = dequantize1d_E2M1_simulated(w, self.scales, self.group_size).reshape(self.shape).to(self.dtype)
+        w = dequantize1d_E3M2_reshape(self.weight)
+        w = dequantize1d_E3M2_simulated(w, self.scales, self.group_size).reshape(self.shape).to(self.dtype)
         return w
 
     @classmethod
@@ -56,7 +56,7 @@ class PackedWeight:
         ori_shape = weights.size()
         ori_dtype = weights.dtype
         weights = weights.flatten()
-        w, s = quantize1d_E2M1_simulated(weights, group_size)
+        w, s = quantize1d_E3M2_simulated(weights, group_size)
         packed = cls(ori_shape, group_size, device, ori_dtype)
         packed.weight = w
         packed.scales = s
