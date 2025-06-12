@@ -29,8 +29,7 @@ def quantize1d_E3M2_simulated(weights: torch.Tensor, group_size: int) -> tuple[t
     w_g_exp = (w_g_exp << 2 ) & 0x1C
     w_g_flag = (w_g & 0x10) >> 4
     w_g_frac = (((w_g & 0x60) >> 5 ) + w_g_flag)
-    # w_g_frac = (w_g & 0x60) >> 5 
-    w_g_frac = torch.where(w_g_frac > 0x7, 0x7, w_g_frac)  # avoid overflow
+    w_g_frac = torch.where(w_g_frac > 0x3, 0x3, w_g_frac)  # avoid overflow
     sign = (sign & 0x80) >> 2
     w_g = (sign|w_g_exp| w_g_frac).to(torch.uint8)
 

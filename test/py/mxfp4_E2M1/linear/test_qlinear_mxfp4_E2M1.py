@@ -16,8 +16,10 @@ seed_everything(42)
 def test_packed_weight():
     num_random_tests = 10
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    shapes = [(128,), (32, 32), (1024, 1024)]
-    group_sizes = [4, 8, 32, 64]
+    # shapes = [(1024,), (32, 32), (1024, 1024)]
+    # group_sizes = [4, 16, 64, 256, 1024]
+    shapes = [(1024,)]
+    group_sizes = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 
     rows = []
     rows_sim = []
@@ -26,7 +28,7 @@ def test_packed_weight():
             avg_error = 0
             avg_error_sim = 0
             for _ in range(num_random_tests):
-                w = torch.rand(shape, device=device, dtype=torch.bfloat16)
+                w = torch.rand(shape, device=device, dtype=torch.bfloat16)-0.5
                 packed_w = PackedWeight.pack_simulated(w, group_size)
 
                 w_unpacked_sim = packed_w.unpack_simulated()
@@ -101,6 +103,48 @@ def test_qlinear_build():
     headers = ["dtype", "device", "bias", "MeanAbsError"]
     table = tabulate.tabulate(rows, headers=headers, tablefmt="pipe")
     logger.info(f"Output error\n{table}")
+
+def test_range():
+    num_random_tests = 10
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    shapes = [(1024,)]
+    randrange = [1, 2, 4, 10, 20, 100, 200]
+
+    rows = []
+    rows_sim = []
+    for shape in shapes:
+        for randrange in randrange:
+            avg_error = 0
+            avg_error_sim = 0
+            for _ in range(num_random_tests):
+                w = randrange * torch.rand(shape, device=device, dtype=torch.bfloat16) - (randrange / 2)
+                packed_w = PackedWeight.pack_simulated(w, 32)
+
+                w_unpacked_sim = packed_w.unpack_simulated()
+                error_sim = torch.abs(w - w_unpacked_sim).mean().item()
+                avg_error_sim += error_sim
+
+                w_unpacked = packed_w.unpack()
+                error = torch.abs(w - w_unpacked).mean().item()
+                avg_error += error
+                assert torch.all(
+                    w_unpacked == w_unpacked_sim
+                ), f"Mismatch between simulated and cuda-acclerated unpacked weights"
+                if not (error < 0.5):
+                    logger.warning(
+                        f"Shape: {shape}, Range: {randrange}, Error: {error}, Error Simulated: {error_sim}"
+                    )
+
+            avg_error /= num_random_tests
+            avg_error_sim /= num_random_tests
+            rows.append([shape, randrange, avg_error])
+            rows_sim.append([shape, randrange, avg_error_sim])
+
+    headers = ["Shape", "Range", "MeanAbsError"]
+    table_sim = tabulate.tabulate(rows, headers=headers, tablefmt="pipe")
+    logger.info(f"Simulated\n{table_sim}")
+    table = tabulate.tabulate(rows_sim, headers=headers, tablefmt="pipe")
+    logger.info(f"Simulated\n{table}")
 
 
 if __name__ == "__main__":
