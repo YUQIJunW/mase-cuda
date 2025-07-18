@@ -151,5 +151,6 @@ def test_range():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     test_packed_weight()
-    test_qlinear_init() 
-    test_qlinear_build()
+    # test_qlinear_init() 
+    # test_qlinear_build()
+    test_range()

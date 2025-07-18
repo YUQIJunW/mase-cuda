@@ -423,6 +423,7 @@ def main():
         token=model_args.token,
         trust_remote_code=model_args.trust_remote_code,
         ignore_mismatched_sizes=model_args.ignore_mismatched_sizes,
+        torch_dtype=torch.bfloat16,
     )
 
     # Preprocessing the raw_datasets

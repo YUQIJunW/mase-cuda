@@ -1,11 +1,11 @@
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-# from mase_cuda.mxfp8_E4M3.linear import QLinearPacked
+from mase_cuda.mxfp8_E4M3.linear import QLinearPacked
 # from mase_cuda.mxfp8_E5M2.linear import QLinearPacked
 # from mase_cuda.mxfp6_E2M3.linear import QLinearPacked
 # from mase_cuda.mxfp6_E3M2.linear import QLinearPacked
-from mase_cuda.mxfp4_E2M1.linear import QLinearPacked
+# from mase_cuda.mxfp4_E2M1.linear import QLinearPacked
 
 init_memory = torch.cuda.memory_allocated()  # in bytes
 model_name = "AnkitAI/deberta-xlarge-base-emotions-classifier"
@@ -13,9 +13,9 @@ model = AutoModelForSequenceClassification.from_pretrained(model_name, torch_dty
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 label2emotion = {idx: emotion for emotion, idx in model.config.label2id.items()}
 
-mxfp8_group_size = 16
-assert model.config.hidden_size % mxfp8_group_size == 0
-assert model.config.intermediate_size % mxfp8_group_size == 0
+group_size = 256
+assert model.config.hidden_size % group_size == 0
+assert model.config.intermediate_size % group_size == 0
 
 text = "I'm so happy with the results!"
 
@@ -64,7 +64,7 @@ for layer_name, layer in model.named_modules():
     if "classifier" in layer_name:
         continue
     layer.cuda()
-    layer_q = QLinearPacked.build_from_linear(layer, group_size=mxfp8_group_size)
+    layer_q = QLinearPacked.build_from_linear(layer, group_size=group_size)
     set_layer_by_name(model, layer_name, layer_q)
     del layer
     torch.cuda.empty_cache()
