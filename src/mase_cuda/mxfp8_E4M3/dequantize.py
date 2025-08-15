@@ -48,8 +48,6 @@ def dequantize1d_E4M3_simulated(input: torch.Tensor, scale: torch.Tensor, group_
     assert scale.ndim == 1, "Scale tensor must be 1D"
     input = input.view(torch.uint8)
     scale = scale.view(torch.uint8)
-    bias = 0x7
-    final_bias = -bias
     numel = input.numel()
     num_groups = numel // group_size
 
@@ -60,7 +58,7 @@ def dequantize1d_E4M3_simulated(input: torch.Tensor, scale: torch.Tensor, group_
     frac = (fp8 & 0x07).to(torch.int16) << 4  # get the mantissa bits
 
     scales = scales.to(torch.int16)  # get the scale bits
-    result = exp + scales
+    result = scales - exp
     result = torch.where(result < 0, 0, result)  # avoid negative exponent
     result = torch.where(result > 0xFE, 0xFE, result)  # avoid overflow
     exp = result << 7  

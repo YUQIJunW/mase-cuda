@@ -71,7 +71,7 @@ def dequantize1d_E2M3_simulated(input: torch.Tensor, scale: torch.Tensor, group_
     frac = (fp6 & 0x07).to(torch.int16) << 4  # get the mantissa bits
 
     scales = scales.to(torch.int16)  # get the scale bits
-    result = exp + scales
+    result = scales - exp 
     result = torch.where(result < 0, 0, result)  # avoid negative exponent
     result = torch.where(result > 0xFE, 0xFE, result)  # avoid overflow
     exp = result << 7

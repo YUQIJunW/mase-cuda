@@ -44,7 +44,7 @@ __host__ void dequantize1d_host(TypeX const *x, const int M, TypeScale const *sc
         auto frac = static_cast<uint16_t>(hX[i] & 0x1) << 6;
 
         auto scales = static_cast<uint16_t>(hScales[i / group_size]);
-        auto result = exp + scales;
+        auto result = scales - exp ;
         result = (result < 0) ? 0 : result;
         result = (result > 0xFE) ? 0xFE : result;
         auto exp_out = result << 7;
@@ -150,7 +150,7 @@ __global__ static void dequantize1d_device(TypeX const *x, ShapeX shape_x, Strid
         auto frac = static_cast<uint16_t>(tXsX[i] & 0x1) << 6;
 
         auto scales = static_cast<uint16_t>(sScale[scaleIdx]);
-        auto result = exp + scales;
+        auto result = scales - exp;
         result = (result < 0) ? 0 : result;
         result = (result > 0xFE) ? 0xFE : result;
         auto exp_out = result << 7;

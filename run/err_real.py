@@ -32,8 +32,8 @@ data_types = [
 print(f"Loading model: {model_name}")
 model = AutoModel.from_pretrained(model_name)
 
-# for name, param in model.named_parameters():
-#     print(f"{name:60s} {tuple(param.shape)}")
+for name, param in model.named_parameters():
+    print(f"{name:60s} {tuple(param.shape)}")
 
 print(f"Extracting weight from: {layer_name}")
 raw_tensor = get_layer_by_name(model, layer_name).detach().cpu()

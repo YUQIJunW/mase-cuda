@@ -3,7 +3,6 @@ import torch
 
 def quantize1d_E2M3_simulated(weights: torch.Tensor, group_size: int) -> tuple[torch.Tensor, torch.Tensor]:
     assert weights.ndim == 1, "Weights tensor must be 1D"
-    bias = 0x3
     assert group_size > 0, "Group size must be positive"
     numel = weights.numel()
     assert numel % group_size == 0, "Number of elements in the weights tensor must be divisible by the group size"
@@ -18,13 +17,13 @@ def quantize1d_E2M3_simulated(weights: torch.Tensor, group_size: int) -> tuple[t
 
     # Get the exponent bits
     exponent = (w_g.view(torch.int32) >> 23) & 0xFF
-    group_exp = exponent.max(dim=1, keepdim=True).values - bias
+    group_exp = exponent.max(dim=1, keepdim=True).values
     scales = group_exp.to(torch.uint8).flatten()
     
     w_g = w_g.to(torch.bfloat16).view(torch.int16)
     w_g_exp = (w_g & 0x7F80) >> 7
-    w_g_exp = w_g_exp - group_exp
-    w_g_exp = torch.where(w_g_exp < 0, 0, w_g_exp)
+    w_g_exp =  group_exp - w_g_exp
+    w_g_exp = torch.where(w_g_exp > 3, 3, w_g_exp)
     w_g_exp = (w_g_exp << 3 ) & 0x18
     w_g_flag = (w_g & 0x8) >> 3
     w_g_frac = (((w_g & 0x70) >> 4 ) + w_g_flag)
